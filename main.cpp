@@ -9,7 +9,7 @@
 #elif _linux_
 #include<ctime>
 #endif
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 #include "IStereoAlg.h"
 #include "BinaryStereo.h"
 #include<map>

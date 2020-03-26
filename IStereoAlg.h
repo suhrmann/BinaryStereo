@@ -5,8 +5,8 @@
 /* Date:                                                       */
 /***************************************************************/
 #pragma once
-#include<opencv/cv.h>
-#include<opencv/highgui.h>
+#include<opencv2/opencv.hpp>
+#include<opencv2/highgui.hpp>
 
 class IStereoAlg
 {
@@ -22,7 +22,7 @@ public:
 	IplImage* lDis;		   // output depth maps
 	IplImage* rDis;
 
-	// ¹«¹²²ÎÊý
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int      maxDis;    //  dataset    levels  scale
 	int      disScale;  //  Tsukuba 	0..15 	16 	
 						//  Venus 	    0..19 	8 	
