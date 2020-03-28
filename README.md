@@ -10,3 +10,7 @@ A fast binary stereo matching algorithm. To run the code, put all files into a s
 If you utilize the code, please cite the original paper:
 
 **Kang Zhang**, Jiyang Li, Yijing Li, Weidong Hu, Lifeng Sun, Shiqiang Yang. _"Binary Stereo Matching"_, 21st International Conference on Pattern Recognition (ICPR). 2012
+
+-----
+
+Update BSM to use OpenCV 4.2 (``opencv2``) by Simon Uhrmann [@suhrmann](https://github.com/suhrmann)
