@@ -19,9 +19,9 @@ IStereoAlg::IStereoAlg(const int mD, const int dS)
 	width = 0;        
 	height = 0;
 	imgSize = 0;
-	lClr = NULL;		
+	lClr = NULL;
 	rClr = NULL;
-	lDis = NULL;		
+	lDis = NULL;
 	rDis = NULL;
 	maxDis = mD;
 	disScale = dS;  
@@ -34,18 +34,11 @@ IStereoAlg::IStereoAlg(const int mD, const int dS)
 /***************************************************************/
 IStereoAlg::~IStereoAlg(void)
 {
-	if( lClr ) {
-		cvReleaseImage(&lClr);
-	}
-	if( rClr ) {
-		cvReleaseImage(&rClr);
-	}
-	if( lDis ) {
-		cvReleaseImage(&lDis);
-	}
-	if( rDis ) {
-		cvReleaseImage(&rDis);
-	}
+    lClr.release();
+    rClr.release();
+
+    lDis.release();
+    rDis.release();
 }
 
 /***************************************************************/
@@ -58,18 +51,19 @@ IStereoAlg::~IStereoAlg(void)
 /***************************************************************/
 void IStereoAlg::LoadImg(const char *lFn, const char *rFn)
 {
-	lClr = cvLoadImage( lFn, CV_LOAD_IMAGE_COLOR );
-	rClr = cvLoadImage( rFn, CV_LOAD_IMAGE_COLOR );
+	lClr = cv::imread( lFn, cv::IMREAD_COLOR );
+	rClr = cv::imread( rFn, cv::IMREAD_COLOR );
+
 	
-	width = lClr->width;	
-	height = lClr->height;
+	width = lClr.size().width;
+	height = lClr.size().height;
 	imgSize = width * height;
 	
 	// create depth map
-	lDis = cvCreateImage( cvSize( width, height ), IPL_DEPTH_8U, 1 );
-	cvZero( lDis );
-	rDis = cvCreateImage( cvSize( width, height ), IPL_DEPTH_8U, 1 );
-	cvZero( rDis );
+	lDis = cv::Mat( cv::Size( width, height ), CV_8U); // TODO Missing param channels? IplImage* cvCreateImage(CvSize size, int depth, int channels)
+    lDis = cv::Mat::zeros(lDis.size(), CV_8U); // Fill Mat with zeros
+	rDis = cv::Mat( cv::Size( width, height ), CV_8U);
+    rDis = cv::Mat::zeros(rDis.size(), CV_8U); // Fill Mat with zeros
 }
 /***************************************************************/
 /* Function: SaveDep                                           */
@@ -81,6 +75,6 @@ void IStereoAlg::LoadImg(const char *lFn, const char *rFn)
 /***************************************************************/
 void IStereoAlg::SaveDep(const char* lFn, const char* rFn)
 {
-	cvSaveImage(lFn,lDis);
-	cvSaveImage(rFn,rDis);
+	cv::imwrite(lFn, lDis);
+    cv::imwrite(rFn, rDis);
 }

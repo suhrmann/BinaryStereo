@@ -1,12 +1,13 @@
 /***************************************************************/
 /* File: main.cpp                                              */
-/* Usage: mian entrance for stereo matching benchmark          */
+/* Usage: main entrance for stereo matching benchmark          */
 /* Author: Zhang Kang                                          */
+/* Updated: Simon Uhrmann                                      */
 /* Date:                                                       */
 /***************************************************************/
 #ifdef _WDINDOWS_
 #include <Windows.h>
-#elif _linux_
+#elif _linux_ | __APPLE__
 #include<ctime>
 #endif
 #include <opencv2/highgui.hpp>
@@ -61,7 +62,7 @@ int main( int argc, char** argv )
 #ifdef _WDINDOWS_
 		DWORD st,ed;
 		st=GetTickCount();
-#elif _linux_
+#elif _linux_ | __APPLE__
         struct timespec ts;
         if(clock_gettime(CLOCK_MONOTONIC,&ts) != 0) {
              //error
@@ -88,7 +89,7 @@ int main( int argc, char** argv )
 #ifdef _WDINDOWS_
 		ed=GetTickCount();
 		printf("Total Time : %ld ms\n", ed - st);
-#elif _linux_
+#elif _linux_ | __APPLE__
         struct timespec te;
         if(clock_gettime(CLOCK_MONOTONIC,&te) != 0) {
              //error

@@ -4,11 +4,7 @@
 /* Author: Zhang Kang                                          */
 /* Date:                                                       */
 /***************************************************************/
-#include <math.h>
-#include <stdlib.h>
-#include "BinaryStereo.h"
 #include "CommonFunc.h"
-#include<opencv/cv.h>
 
 double F(double input)
 {
@@ -48,10 +44,10 @@ void RGBtoLab(double R, double G, double B, double &L, double &a, double &b)
 }
 
 // generate gaussian distribution
-CvRNG rngSeed = cvRNG( 23 ); // 23
-double RandNormal( const double std, const double mu )
+static cv::RNG rngSeed = cv::RNG( 23 ); // 23
+double RandNormal( double std, double mu )
 {
-	double x1, x2, w, y1;
+	double x1, x2, w, w2, y1;
 	static double y2;
 	static bool use_last = false;
 
@@ -59,20 +55,18 @@ double RandNormal( const double std, const double mu )
 	{
 		y1 = y2;
 		use_last = false;
-	}
+    }
 	else
 	{
 		do {
-			//double t1 = ( double )rand( ) / RAND_MAX;
-			//double t2 = ( double )rand( ) / RAND_MAX;
-			x1 = 2.0 * cvRandReal( &rngSeed ) - 1.0;
-			x2 = 2.0 * cvRandReal( &rngSeed ) - 1.0;
-			//x1 = 2.0 * t1 - 1.0;
-			//x2 = 2.0 * t2 - 1.0;
-			w = x1 * x1 + x2 * x2;
-		} while ( w >= 1.0 );
+			double t1 = ( double )rand( ) / RAND_MAX;
+			double t2 = ( double )rand( ) / RAND_MAX;
+			x1 = 2.0 * t1 - 1.0;
+			x2 = 2.0 * t2 - 1.0;
+			w2 = x1 * x1 + x2 * x2;
+		} while ( w2 >= 1.0 );
 
-		w = sqrt( (-2.0 * log( w ) ) / w );
+		w = sqrt( (-2.0 * log( w2 ) ) / w2 );
 		y1 = x1 * w;
 		y2 = x2 * w;
 		use_last = true;
@@ -100,50 +94,67 @@ int MyGetCutVal(int* wgtCnt)
 	}
 	// return CLR_WGT_THRES;
 }
-// adaptive threshold for canny edge detecotr
-void AdaptiveFindThreshold(CvMat *dx, CvMat *dy, double *low, double *high)
+
+/**
+ * Adaptive threshold for canny edge detecotr
+ */
+void AdaptiveFindThreshold(const cv::Mat *dx, const cv::Mat *dy, double *low, double *high)
 {
-	CvSize size;
-	IplImage *imge=0;
-	int i,j;
-	CvHistogram *hist;
-	int hist_size = 255;
-	float range_0[]={0,256};
-	float* ranges[] = { range_0 };
-	double  PercentOfPixelsNotEdges = 0.7;
-	size = cvGetSize(dx);
-	imge = cvCreateImage(size, IPL_DEPTH_32F, 1);
-	float maxv = 0;
-	for(i = 0; i < size.height; i++ )
-	{
-		const short* _dx = (short*)(dx->data.ptr + dx->step*i);
-		const short* _dy = (short*)(dy->data.ptr + dy->step*i);
-		float* _image = (float *)(imge->imageData + imge->widthStep*i);
-		for(j = 0; j < size.width; j++)
-		{
-			_image[j] = (float)(abs(_dx[j]) + abs(_dy[j]));
-			maxv = maxv < _image[j] ? _image[j]: maxv;
-		}
-	}
+    cv::MatND hist; //    CvHistogram *hist;
+    int hist_size = 255;
+    float range_0[]={ 0, 256 };
+    const float* ranges[] = { range_0 }; //float* ranges[] = { range_0 };
+    double  PercentOfPixelsNotEdges = 0.7;
+    cv::Size size = dx->size(); // cvGetSize(dx);
+    cv::Mat imge = cv::Mat(size, CV_32F); // cvCreateImage(size, IPL_DEPTH_32F, 1);
+    float maxv = 0;
+    for(int i = 0; i < size.height; i++ )
+    {
+        const short* _dx = (short*)(dx->data + dx->step * i);
+        const short* _dy = (short*)(dy->data + dy->step * i);
+        float* _image = (float *)(imge.data + imge.step * i); //(imge->imageData + imge->widthStep*i);
+        for(int j = 0; j < size.width; j++)
+        {
+            _image[j] = (float)(abs(_dx[j]) + abs(_dy[j]));
+            maxv = maxv < _image[j] ? _image[j]: maxv;
+        }
+    }
 
-	range_0[1] = maxv;
-	hist_size = (int)(hist_size > maxv ? maxv:hist_size);
-	hist = cvCreateHist(1, &hist_size, CV_HIST_ARRAY, ranges, 1);
-	cvCalcHist( &imge, hist, 0, NULL );
-	int total = (int)(size.height * size.width * PercentOfPixelsNotEdges);
-	float sum=0;
-	int icount = hist->mat.dim[0].size;
+    range_0[1] = maxv;
+    hist_size = min<int>(maxv, hist_size); //hist_size > maxv ? maxv : hist_size);
+    const int _dims = 1;
+    const int _uniform = 1;
+    //hist = cvCreateHist(_dims, &hist_size, CV_HIST_ARRAY, ranges, _uniform);
+    // C: CvHistogram* cvCreateHist(int dims, int* sizes, int type, float** ranges=NULL, int uniform=1 )
+    const int _accumulate = 0;
+    const void* _mask = NULL;
+    //cvCalcHist( &imge, hist, 0, NULL );
+    //cvCalcHist( &imge, hist, _accumulate, _mask );
+    const int _nimages = 1;
+    const int _histSize[] = { hist_size };
+    const int _channels[] = {0}; // TODO Unknown - sample: {0, 1};
+    hist = cv::Mat(_dims, _histSize, CV_32F);
+    cv::calcHist( &imge, _nimages, _channels, cv::Mat(), // do not use mask
+              hist, _dims, _histSize, ranges,
+              true, // the histogram is uniform
+              false );
 
-	float *h = (float*)cvPtr1D( hist->bins, 0 );
-	for(i = 0; i < icount; i++)
-	{
-		sum += h[i];
-		if( sum > total )
-			break; 
-	}
+    int total = (int)(size.height * size.width * PercentOfPixelsNotEdges);
+    float sum=0;
+    int icount = hist.size().height; // hist.size().width; // hist->mat.dim[0].size;
 
-	*high = (i+1) * maxv / hist_size ;
-	*low = *high * 0.4;
-	cvReleaseImage( &imge );
-	cvReleaseHist(&hist);
+    float *h = hist.ptr<float>(); // (float*)cvPtr1D( hist->bins, 0 );
+    int cntr;
+    for(cntr = 0; cntr < icount; cntr++)
+    {
+        int uio = h[cntr];
+        sum += h[cntr];
+        if( sum > total )
+            break;
+    }
+
+    *high = (cntr+1) * maxv / hist_size ;
+    *low = *high * 0.4;
+    imge.release();
+    hist.release();
 }

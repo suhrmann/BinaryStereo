@@ -6,7 +6,7 @@
 /***************************************************************/
 #pragma once
 #include "IStereoAlg.h"
-#include<bitset>
+#include <bitset>
 using namespace std;
 
 #define  DESC_LEN 4096		// descriptor length

@@ -1,11 +1,21 @@
 cmake_minimum_required(VERSION 3.15)
+
 project(BinaryStereo)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14) # OpenCV requires at least C++ 11
 
+## Load OpenCV via `pkg-config`
+# See https://stackoverflow.com/a/57224542/1700776
+# the `pkg_check_modules` function is created with this call
+find_package(PkgConfig REQUIRED)
+
+# these calls create special `PkgConfig::<MODULE>` variables
+pkg_check_modules(OPENCV REQUIRED IMPORTED_TARGET opencv4)
+
+## Include project sources
 include_directories(.)
-include_directories(/usr/local/opt/opencv/include/opencv4) # Install dir of `brew install opencv`
 
+## Build executable
 add_executable(BinaryStereo
         main.cpp
         BinaryStereo.cpp
@@ -15,3 +25,9 @@ add_executable(BinaryStereo
         IStereoAlg.cpp
         IStereoAlg.h
 )
+
+# Link OpenCV libs
+target_link_libraries(BinaryStereo PUBLIC
+        PkgConfig::OPENCV
+)
+

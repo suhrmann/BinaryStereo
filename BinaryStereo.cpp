@@ -150,24 +150,20 @@ void BinaryStereo::setClrData()
 
 	pl_gray = l_gray;
 	pr_gray = r_gray;
-	IplImage* lGray;
-	IplImage* rGray;
-	lGray = cvCreateImage( cvSize( width,height ), IPL_DEPTH_8U, 1 );
-	cvCvtColor( lClr, lGray, CV_BGR2GRAY );
-	rGray = cvCreateImage( cvSize( width, height ), IPL_DEPTH_8U, 1 );
-	cvCvtColor( rClr, rGray, CV_BGR2GRAY );
+	cv::Mat lGray;
+    cv::Mat rGray;
+	lGray = cv::Mat( cv::Size( width,height ), CV_8U); // TODO Missing param channels? IplImage* cvCreateImage(CvSize size, int depth, int channels)
+	cv::cvtColor( lClr, lGray, cv::COLOR_BGR2GRAY );
+	rGray = cv::Mat( cv::Size( width, height ), CV_8U );
+	cv::cvtColor( rClr, rGray, cv::COLOR_BGR2GRAY );
 	for( int y = 0; y < height; y ++ ) {
-		uchar* gray1 = ( uchar* ) ( lGray->imageData 
-			+ y * lGray->widthStep );
-		uchar* gray2 = ( uchar* ) ( rGray->imageData 
-			+ y * rGray->widthStep );
+		uchar* gray1 = ( uchar* ) ( lGray.data + y * lGray.step );
+		uchar* gray2 = ( uchar* ) ( rGray.data + y * rGray.step );
 
 		for( int x = 0; x < width; x ++ ) {
-			uchar* bgr1 = ( uchar* ) lClr->imageData 
-				+ y * lClr->widthStep + 3 * x;
+			uchar* bgr1 = ( uchar* ) lClr.data + y * lClr.step + 3 * x;
 
-			uchar* bgr2 = ( uchar* ) rClr->imageData
-				+ y * rClr->widthStep + 3 * x;
+			uchar* bgr2 = ( uchar* ) rClr.data + y * rClr.step + 3 * x;
 
 			// BGR
 			*pl_b = ( int ) ( bgr1[ 0 ] );
@@ -209,8 +205,8 @@ void BinaryStereo::setClrData()
 
 		}
 	}
-	cvReleaseImage(&lGray);
-	cvReleaseImage(&rGray);
+	lGray.release();
+	rGray.release();
 }
 /***************************************************************/
 /* Function: setPairDistr                                      */
@@ -240,34 +236,34 @@ void BinaryStereo::setPairDistr()
 /***************************************************************/
 void BinaryStereo::setEdgeData()
 {
-	IplImage* lGray = cvCreateImage( cvSize( width,height ), IPL_DEPTH_8U, 1 );  
-	cvCvtColor( lClr, lGray, CV_BGR2GRAY );
-	IplImage* rGray = cvCreateImage( cvSize( width, height ), IPL_DEPTH_8U, 1 );
-	cvCvtColor( rClr, rGray, CV_BGR2GRAY );
+	cv::Mat lGray = cv::Mat( cv::Size( width,height ), CV_8U );
+	cv::cvtColor( lClr, lGray, cv::COLOR_BGR2GRAY );
+    cv::Mat rGray = cv::Mat( cv::Size( width, height ), CV_8U );
+    cv::cvtColor( rClr, rGray, cv::COLOR_BGR2GRAY );
 	double low, high;
-	IplImage* lEdge = cvCreateImage( cvGetSize( lGray ), IPL_DEPTH_8U, 1 );		// edge image
-	IplImage* rEdge = cvCreateImage( cvGetSize( rGray ), IPL_DEPTH_8U, 1 );
-	CvMat* dx = cvCreateMat( height, width, CV_16SC1 );								
-	CvMat* dy = cvCreateMat( height, width, CV_16SC1 );
-	cvSobel( lGray, dx, 1, 0 );
-	cvSobel( lGray, dy, 0, 1 );
-	AdaptiveFindThreshold( dx, dy, &low, &high);
-	cvCanny( lGray, lEdge, low, high );					// canny edge detection
-	cvSobel( rGray, dx, 1, 0 );
-	cvSobel( rGray, dy, 0, 1 );
-	AdaptiveFindThreshold( dx, dy, &low, &high);
-	cvCanny( rGray, rEdge, low, high );
-	cvReleaseMat( &dx );
-	cvReleaseMat( &dy );
+    cv::Mat lEdge = cv::Mat( lGray.size(), CV_8U );		// edge image
+    cv::Mat rEdge = cv::Mat( rGray.size(), CV_8U );
+    cv::Mat dx = cv::Mat( height, width, CV_16SC1 );
+    cv::Mat dy = cv::Mat( height, width, CV_16SC1 );
+    cv::Sobel( lGray, dx, CV_8U,1, 0 );
+    cv::Sobel( lGray, dy, CV_8U, 0, 1 );
+	AdaptiveFindThreshold( &dx, &dy, &low, &high);
+	cv::Canny( lGray, lEdge, low, high );					// canny edge detection
+	cv::Sobel( rGray, dx, CV_8U, 1, 0 );
+	cv::Sobel( rGray, dy, CV_8U, 0, 1 );
+	AdaptiveFindThreshold( &dx, &dy, &low, &high);
+	cv::Canny( rGray, rEdge, low, high );
+	dx.release();
+	dy.release();
 
-														// set edge data
+    // set edge data
 	lIsEdge = new int[ imgSize ];
 	rIsEdge = new int[ imgSize ];
 	int ereaRadius = maxDis;
 	// set left edge erea
 	memset( lIsEdge, 0, imgSize * sizeof( int ) );
 	for( int y = 0; y < height; y ++ ) {
-		uchar* lEdgeData = ( uchar* ) ( lEdge->imageData + y * lEdge->widthStep );
+		uchar* lEdgeData = ( uchar* ) ( lEdge.data + y * lEdge.step );
 		int* tempIsEdge = lIsEdge + y * width;
 		for( int x = 0; x < width; x ++ ) {
 			if( lEdgeData[ x ] == 255 ) {
@@ -297,7 +293,7 @@ void BinaryStereo::setEdgeData()
 	// set right edge erea
 	memset( rIsEdge, 0, imgSize * sizeof( int ) );
 	for( int y = 0; y < height; y ++ ) {
-		uchar* rEdgeData = ( uchar* ) ( rEdge->imageData + y * rEdge->widthStep );
+		uchar* rEdgeData = ( uchar* ) ( rEdge.data + y * rEdge.step );
 		int* tempIsEdge = rIsEdge + y * width;
 		for( int x = 0; x < width; x ++ ) {
 			if( rEdgeData[ x ] == 255 ) {
@@ -323,10 +319,10 @@ void BinaryStereo::setEdgeData()
 			}
 		}
 	}
-	cvReleaseImage(&lGray);
-	cvReleaseImage(&rGray);
-	cvReleaseImage(&lEdge);
-	cvReleaseImage(&rEdge);
+	lGray.release();
+	rGray.release();
+	lEdge.release();
+    rEdge.release();
 }
 /***************************************************************/
 /* Function: prepareUsed                                       */
@@ -584,7 +580,7 @@ void BinaryStereo::Match()
 #endif
 	// calc left depth
 	for( int y = yST; y  < yED; y ++ ) {
-		uchar* dData = ( uchar* )lDis->imageData + y * lDis->widthStep;
+		uchar* dData = ( uchar* )lDis.data + y * lDis.step;
 		int index = y * width;
 		for( int x = xST; x < xED; x ++ ) {
 			int minDiff = descLen;
@@ -628,7 +624,7 @@ void BinaryStereo::Match()
 	}
 	// calc right depth
 	for( int y = yST; y  < yED; y ++ ) {
-		uchar* dData = ( uchar* )rDis->imageData + y * rDis->widthStep;
+		uchar* dData = ( uchar* )rDis.data + y * rDis.step;
 		int index = y * width;
 		for( int x = xST; x < xED; x ++ ) {
 			int minDiff = descLen;
