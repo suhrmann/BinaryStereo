@@ -59,10 +59,8 @@ double RandNormal( double std, double mu )
 	else
 	{
 		do {
-			double t1 = ( double )rand( ) / RAND_MAX;
-			double t2 = ( double )rand( ) / RAND_MAX;
-			x1 = 2.0 * t1 - 1.0;
-			x2 = 2.0 * t2 - 1.0;
+			x1 = rngSeed.uniform(-1.0, 1.0);
+			x2 = rngSeed.uniform(-1.0, 1.0);
 			w2 = x1 * x1 + x2 * x2;
 		} while ( w2 >= 1.0 );
 
